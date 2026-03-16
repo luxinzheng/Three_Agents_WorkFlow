@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 — spawn 策略重大修正 (background+polling → yield+announce)
+- **[BREAKING]** Removed all `background: true`, `streamTo: "parent"`, and `sessions_status` polling
+  - These are `runtime=acp` only; under `runtime=subagent` they error or are ignored
+- Replaced with correct OpenClaw subagent pattern: `sessions_spawn → sessions_yield → announce`
+- Removed `spawnDefaults` section from `openclaw-three-agent.example.json`
+- Rewrote `_spawn_background()` → `_spawn_and_yield()` in `engine.py`
+- Removed constants: `TIMEOUT_SECONDS`, `STREAM_TO`, `BACKGROUND`, `POLL_INTERVAL_SECONDS`, `MAX_POLL_ATTEMPTS`
+- Updated all documentation: SOUL.md, SKILL.md, architecture.md, migration.md, example.json
+- Retained correctly: plan persistence (task-plan.json), search throttling, require_user_decision, parallel execution
+
 ## 0.5.1
 - [#1] Added Brave Search throttling guidelines to 尚书省 SOUL.md + identity (1 QPS limit, merge queries, max 3 searches per subtask)
 - [#2] Fixed misleading "转交" wording in 尚书省 — now clarifies 中书省 auto-spawns 门下省 after execution

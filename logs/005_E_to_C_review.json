@@ -1,19 +1,19 @@
 {
   "meta": {
-    "task_id": "TASK-20260316-6C753E",
-    "message_id": "MSG-2CFB8143",
+    "task_id": "TASK-20260316-336D04",
+    "message_id": "MSG-5245043B",
     "version": 1,
     "from_agent": "E",
     "to_agent": "C",
-    "timestamp": "2026-03-16T07:53:08.654570+00:00",
+    "timestamp": "2026-03-16T08:21:10.376208+00:00",
     "task_type": "complex",
     "stage": "review",
     "status": "passed"
   },
   "payload": {
-    "review_id": "REV-TASK-20260316-6C753E",
-    "plan_id": "PLAN-TASK-20260316-6C753E",
-    "execution_result_id": "EXEC-TASK-20260316-6C753E-merged",
+    "review_id": "REV-TASK-20260316-336D04",
+    "plan_id": "PLAN-TASK-20260316-336D04",
+    "execution_result_id": "EXEC-TASK-20260316-336D04-merged",
     "review_decision": "passed",
     "review_scope": [
       "子任务覆盖",
@@ -37,11 +37,11 @@
   "attachments": [
     {
       "type": "plan_reference",
-      "ref_id": "PLAN-TASK-20260316-6C753E"
+      "ref_id": "PLAN-TASK-20260316-336D04"
     },
     {
       "type": "execution_reference",
-      "ref_id": "EXEC-TASK-20260316-6C753E-merged"
+      "ref_id": "EXEC-TASK-20260316-336D04-merged"
     }
   ]
 }

@@ -54,36 +54,42 @@ zhongshusheng → [shangshusheng, menxiasheng]
 
 ## ⏱️ 超时与执行策略
 
-### sessions_spawn 参数规范
+### sessions_spawn 参数规范（runtime=subagent）
 
-所有省的 spawn 调用**必须**携带以下参数：
+spawn 调用**只需**以下参数：
 
 ```json
 {
-  "background": true,
-  "runTimeoutSeconds": 900,
-  "timeoutSeconds": 900,
-  "streamTo": "parent"
+  "agentId": "shangshusheng",
+  "runTimeoutSeconds": 900
 }
 ```
 
 | 参数 | 值 | 说明 |
 |------|:--:|------|
-| `background` | `true` | 非阻塞模式，spawn 后立即返回 sessionId |
+| `agentId` | 目标省 ID | 必填 |
 | `runTimeoutSeconds` | 900 | 子代理最大执行时间（统一） |
-| `timeoutSeconds` | 900 | 绝对截止时间（含排队等待） |
-| `streamTo` | `"parent"` | 子代理输出实时流式回传到中书省 |
 
-### 后台执行与轮询
+### ⚠️ 禁止使用的参数
 
-1. 所有 `sessions_spawn` 使用 `background: true`，调用后立即返回 `sessionId`
-2. 中书省每 5 秒调用 `sessions_status(sessionId)` 轮询执行状态
-3. 状态为 `completed` 时取回结果；状态为 `failed` / `timeout` 时触发兜底逻辑
-4. `streamTo: "parent"` 确保子代理执行过程中的中间输出实时可见
+以下参数仅适用于 `runtime=acp`，在 `runtime=subagent` 下**会报错或无效**：
+
+- ❌ `background: true` — `sessions_spawn` 本身已是非阻塞
+- ❌ `streamTo: "parent"` — 报错：`streamTo is only supported for runtime=acp`
+- ❌ 轮询 `sessions_status` — OpenClaw 明确禁止，正确模式是 push-based announce
+
+### 正确的 spawn + yield 模式
+
+```
+1. sessions_spawn(agentId='shangshusheng', runTimeoutSeconds=900)
+2. sessions_yield()           ← 挂起当前省，等待子省完成
+3. 子省完成 → announce 事件推回  ← OpenClaw 自动推送
+4. 中书省恢复，获得子省结果
+```
 
 ### 大任务并行执行
 
-当子任务数量 >= 4 且子任务间相互独立时，中书省可同时 spawn 2个尚书省实例（均 `background: true`），各分配部分子任务并行执行，分别轮询直到完成，合并结果后再提交门下省。
+当子任务数量 >= 4 且子任务间相互独立时，中书省可同时 spawn 2个尚书省实例，各分配部分子任务并行执行，分别 yield 等待 announce，合并结果后再提交门下省。
 
 ### 超时兜底逻辑
 

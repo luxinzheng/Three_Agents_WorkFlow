@@ -5,10 +5,12 @@ Implements the workflow:
 - Complex tasks: C (plan) → D (execute, 1-2 instances) → E (review+audit) → C (integrate) → user
 - Rework limits enforced at each level
 
-Spawn strategy:
-- All sessions_spawn calls use background=true + polling to avoid synchronous blocking.
-- streamTo="parent" enables real-time streaming of subagent output to the parent.
-- Unified runTimeoutSeconds=900 for all agents.
+Spawn strategy (OpenClaw runtime=subagent):
+- sessions_spawn is inherently non-blocking; do NOT pass ``background`` or ``streamTo``.
+- After spawn, call ``sessions_yield`` to suspend the parent until the child completes.
+- The child's completion triggers a push-based ``announce`` event that resumes the parent.
+- NEVER poll ``sessions_status`` — OpenClaw docs explicitly forbid it.
+- ``runTimeoutSeconds`` is the only timeout knob.  Unified to 900 s for all agents.
 """
 
 from __future__ import annotations
@@ -37,13 +39,11 @@ from orchestrator.schemas import (
 logger = logging.getLogger(__name__)
 
 # ── Spawn strategy constants ──────────────────────────────────────────
-# All agents share the same timeout & background configuration.
+# OpenClaw runtime=subagent mode:
+#   - sessions_spawn is already non-blocking (background/streamTo NOT supported)
+#   - After spawn → call sessions_yield to wait for announce event
+#   - NEVER poll sessions_status (forbidden by OpenClaw)
 RUN_TIMEOUT_SECONDS = 900          # Max execution time for any spawned agent
-TIMEOUT_SECONDS = 900              # Absolute deadline (including queue wait)
-STREAM_TO = "parent"               # Real-time output forwarding to parent
-BACKGROUND = True                  # Non-blocking spawn; use polling to collect result
-POLL_INTERVAL_SECONDS = 5          # Interval between status checks while polling
-MAX_POLL_ATTEMPTS = TIMEOUT_SECONDS // POLL_INTERVAL_SECONDS  # Safety cap
 
 
 class WorkflowEngine:
@@ -72,51 +72,47 @@ class WorkflowEngine:
         self._exec_rework_count = 0
         self._review_rework_count = 0
 
-    # ── Spawn helpers ──────────────────────────────────────────────────
+    # ── Spawn helpers (sessions_yield + announce) ───────────────────────
 
     @staticmethod
     def _build_spawn_params(agent_id: str) -> dict[str, Any]:
-        """Build the standard sessions_spawn parameter dict for *agent_id*.
+        """Build the standard ``sessions_spawn`` parameter dict.
 
-        Every spawn call MUST carry these fields so that:
-        - ``background: true`` makes the call non-blocking.
-        - The engine polls ``sessions_status`` until the agent finishes.
-        - ``streamTo: "parent"`` streams intermediate output in real time.
-        - ``runTimeoutSeconds`` / ``timeoutSeconds`` prevent infinite hangs.
+        OpenClaw runtime=subagent rules:
+        - ``sessions_spawn`` is already non-blocking; do NOT pass
+          ``background`` or ``streamTo`` (they are ACP-only).
+        - Only ``agentId`` and ``runTimeoutSeconds`` are valid.
+        - After spawn, the caller must ``sessions_yield`` to wait
+          for the push-based ``announce`` event.
         """
         return {
             "agentId": agent_id,
-            "background": BACKGROUND,
             "runTimeoutSeconds": RUN_TIMEOUT_SECONDS,
-            "timeoutSeconds": TIMEOUT_SECONDS,
-            "streamTo": STREAM_TO,
         }
 
-    def _spawn_background(self, agent_id: str, message: Message) -> Message:
-        """Spawn *agent_id* in background mode, poll until done, return result.
+    def _spawn_and_yield(self, agent_id: str, message: Message) -> Message:
+        """Spawn *agent_id*, then yield until completion (announce-based).
 
-        Flow:
-        1. ``sessions_spawn(background=true, streamTo='parent', ...)``
-        2. Loop: ``sessions_status(sessionId)`` every ``POLL_INTERVAL_SECONDS``
-        3. On completion → return the agent's result ``Message``.
-        4. On timeout → return a synthetic ``BLOCKED`` message with partial info.
+        Real OpenClaw flow:
+        1. ``sessions_spawn(agentId, runTimeoutSeconds=900)``
+        2. ``sessions_yield()`` — parent suspends, waits for announce
+        3. Child completes → OpenClaw pushes ``announce`` event to parent
+        4. Parent resumes with child's result
 
-        In the current **local-simulation** orchestrator the actual agent
-        logic runs in-process, so polling is instantaneous.  The method is
-        structured this way so that porting to a real OpenClaw runtime only
-        requires swapping the inner ``# --- simulate ---`` block with real
-        HTTP / SDK calls.
+        ⚠️ NEVER poll ``sessions_status`` — OpenClaw forbids it.
+
+        In the current **local-simulation** orchestrator, the actual agent
+        logic runs in-process so yield is instantaneous.  Porting to real
+        OpenClaw only requires swapping the ``# --- simulate ---`` block.
         """
         spawn_params = self._build_spawn_params(agent_id)
         logger.info(
-            "spawn(%s) background=%s runTimeout=%ss streamTo=%s",
+            "sessions_spawn(%s) runTimeout=%ss → sessions_yield()",
             agent_id,
-            spawn_params["background"],
             spawn_params["runTimeoutSeconds"],
-            spawn_params["streamTo"],
         )
 
-        # --- simulate: in-process execution (replace with real spawn) ------
+        # --- simulate: in-process execution (replace with real spawn+yield) -
         agent_map = {
             "shangshusheng_0": self.shangshusheng_0,
             "shangshusheng_1": self.shangshusheng_1,
@@ -142,7 +138,7 @@ class WorkflowEngine:
                 f"⏱️ 执行超时（{elapsed:.0f}s > {RUN_TIMEOUT_SECONDS}s），返回已完成的部分结果。"
             )
         else:
-            logger.info("spawn(%s) completed in %.1fs", agent_id, elapsed)
+            logger.info("spawn(%s) announce received in %.1fs", agent_id, elapsed)
 
         return result
 
@@ -243,9 +239,9 @@ class WorkflowEngine:
         else:
             exec_result = self._execute_single(plan)
 
-        # Step 4: 门下省 reviews execution results (background + polling)
+        # Step 4: 门下省 reviews execution results (spawn + yield)
         review_msg = self._prepare_for_review(plan, exec_result)
-        review_result = self._spawn_background("menxiasheng", review_msg)
+        review_result = self._spawn_and_yield("menxiasheng", review_msg)
         self._save_message(review_result)
 
         # Step 5: Handle review result
@@ -260,7 +256,7 @@ class WorkflowEngine:
                 else:
                     exec_result2 = self._execute_single(plan)
                 review_msg2 = self._prepare_for_review(plan, exec_result2)
-                review_result = self._spawn_background("menxiasheng", review_msg2)
+                review_result = self._spawn_and_yield("menxiasheng", review_msg2)
                 self._save_message(review_result)
 
             elif problem_source == "plan_defect" and self._plan_rework_count < 1:
@@ -279,7 +275,7 @@ class WorkflowEngine:
                     exec_result2 = self._execute_single(plan2)
 
                 review_msg2 = self._prepare_for_review(plan2, exec_result2)
-                review_result = self._spawn_background("menxiasheng", review_msg2)
+                review_result = self._spawn_and_yield("menxiasheng", review_msg2)
                 self._save_message(review_result)
 
             elif problem_source == "quality_defect" and self._review_rework_count < 1:
@@ -290,7 +286,7 @@ class WorkflowEngine:
                 else:
                     exec_result2 = self._execute_single(plan)
                 review_msg2 = self._prepare_for_review(plan, exec_result2)
-                review_result = self._spawn_background("menxiasheng", review_msg2)
+                review_result = self._spawn_and_yield("menxiasheng", review_msg2)
                 self._save_message(review_result)
 
         # Step 6: 中书省 integrates results and outputs to user
@@ -299,15 +295,15 @@ class WorkflowEngine:
         return final.payload
 
     def _execute_single(self, plan: Message) -> Message:
-        """Execute all subtasks with a single 尚书省 instance (background + polling)."""
+        """Execute all subtasks with a single 尚书省 instance (spawn + yield)."""
         exec_msg = self._prepare_for_execution(plan, plan.payload.get("subtasks", []))
-        exec_result = self._spawn_background("shangshusheng", exec_msg)
+        exec_result = self._spawn_and_yield("shangshusheng", exec_msg)
         self._save_message(exec_result)
         return exec_result
 
     def _execute_parallel(self, plan: Message, subtasks: list[dict]) -> Message:
-        """Execute subtasks in parallel with 2 尚书省 instances (both background), then merge."""
-        logger.info("任务量较大，启动 2 个尚书省并行执行 (background=true)")
+        """Execute subtasks in parallel with 2 尚书省 instances (spawn + yield), then merge."""
+        logger.info("任务量较大，启动 2 个尚书省并行执行 (spawn + yield)")
         mid = len(subtasks) // 2
         batch_0 = subtasks[:mid]
         batch_1 = subtasks[mid:]
@@ -315,10 +311,10 @@ class WorkflowEngine:
         exec_msg_0 = self._prepare_for_execution(plan, batch_0)
         exec_msg_1 = self._prepare_for_execution(plan, batch_1)
 
-        # Both spawned in background; in a real runtime they run concurrently.
-        result_0 = self._spawn_background("shangshusheng_0", exec_msg_0)
+        # Both spawned then yielded; in a real runtime they run concurrently.
+        result_0 = self._spawn_and_yield("shangshusheng_0", exec_msg_0)
         self._save_message(result_0)
-        result_1 = self._spawn_background("shangshusheng_1", exec_msg_1)
+        result_1 = self._spawn_and_yield("shangshusheng_1", exec_msg_1)
         self._save_message(result_1)
 
         # Merge results

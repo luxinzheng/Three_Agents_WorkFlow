@@ -85,23 +85,23 @@ Recommended minimum fields:
 - If the user says **"交部议"**, force the three-agent workflow.
 - Interpret it as a workflow command, not ordinary prose.
 
-## Spawn configuration
+## Spawn configuration (runtime=subagent)
 
-All `sessions_spawn` calls must include these parameters:
+All `sessions_spawn` calls use spawn + yield + announce:
 
 ```json
 {
-  "background": true,
-  "runTimeoutSeconds": 900,
-  "timeoutSeconds": 900,
-  "streamTo": "parent"
+  "agentId": "shangshusheng",
+  "runTimeoutSeconds": 900
 }
 ```
 
-- `background: true` — non-blocking spawn; caller polls `sessions_status` every 5s
-- `streamTo: "parent"` — real-time output forwarding to parent agent
-- `runTimeoutSeconds: 900` — unified timeout for all agents (no per-agent differentiation)
+- After spawn → call `sessions_yield()` to suspend until child completes
+- Child completion pushes an `announce` event back to the parent
+- `runTimeoutSeconds: 900` — unified timeout for all agents
 - On timeout: record partial results, notify user, offer checkpoint resume
+
+**⚠️ Do NOT use** `background`, `streamTo`, or poll `sessions_status` — these are `runtime=acp` only and will error or be ignored under `runtime=subagent`.
 
 ## Recommended smoke test
 

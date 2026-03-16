@@ -80,27 +80,32 @@ See `schemas/message_schema.json` for the full JSON Schema definition.
 ### Standard Issue Types
 `missing_information`, `missing_subtask`, `constraint_violation`, `logic_conflict`, `format_error`, `insufficient_evidence`, `hallucination_risk`, `uncertainty_not_marked`, `execution_incomplete`, `plan_defect`, `quality_defect`, `user_request_not_fully_addressed`
 
-## Spawn Strategy: Background + Polling + Stream
+## Spawn Strategy: spawn + yield + announce (runtime=subagent)
 
-All `sessions_spawn` calls use a unified configuration:
+All `sessions_spawn` calls use `runtime=subagent` mode:
 
 ```json
 {
-  "background": true,
-  "runTimeoutSeconds": 900,
-  "timeoutSeconds": 900,
-  "streamTo": "parent"
+  "agentId": "shangshusheng",
+  "runTimeoutSeconds": 900
 }
 ```
 
 | Parameter | Value | Purpose |
 |-----------|:-----:|---------|
-| `background` | `true` | Non-blocking spawn; returns `sessionId` immediately |
+| `agentId` | target agent | Required |
 | `runTimeoutSeconds` | 900 | Unified max execution time for all agents |
-| `timeoutSeconds` | 900 | Absolute deadline including queue wait |
-| `streamTo` | `"parent"` | Real-time streaming of subagent output to parent |
 
-**Polling loop:** After spawn, the caller polls `sessions_status(sessionId)` every 5 seconds until `completed`, `failed`, or `timeout`.
+**❌ Forbidden parameters** (only valid for `runtime=acp`):
+- `background: true` — `sessions_spawn` is already non-blocking
+- `streamTo: "parent"` — errors: only supported for `runtime=acp`
+- Polling `sessions_status` — OpenClaw explicitly forbids it
+
+**Correct flow:**
+1. `sessions_spawn(agentId, runTimeoutSeconds=900)` — non-blocking
+2. `sessions_yield()` — parent suspends, waits for child
+3. Child completes → push-based `announce` event resumes parent
+4. Parent receives child's result and continues
 
 **Timeout fallback:**
 1. On timeout → record completed steps, report partial progress to user
