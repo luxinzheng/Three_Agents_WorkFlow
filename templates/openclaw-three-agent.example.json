@@ -1,0 +1,68 @@
+{
+  "_comment": "Example config fragment for 三省制 (Three-Agent System). Replace REPLACE_ME and adapt paths before merging into your real openclaw.json.",
+  "_note_depth": "OpenClaw subagent depth limit is 1. Only zhongshusheng (depth 0) can spawn subagents. All other agents have empty allowAgents.",
+  "_note_spawn": "All sessions_spawn calls MUST use background:true + streamTo:'parent' + runTimeoutSeconds:900. The caller polls sessions_status until completion.",
+  "spawnDefaults": {
+    "background": true,
+    "streamTo": "parent",
+    "runTimeoutSeconds": 900,
+    "timeoutSeconds": 900,
+    "pollIntervalSeconds": 5
+  },
+  "agents": {
+    "list": [
+      {
+        "id": "zhongshusheng",
+        "name": "中书省",
+        "workspace": "/path/to/workspace-three-agent/zhongshusheng",
+        "identity": {
+          "theme": "你是中书省，三省制系统总控。职责：受理请求，判断简单/复杂；简单任务直接作答；复杂任务内部制定计划后串行spawn：(1)sessions_spawn(agentId='shangshusheng',background=true)执行（大任务可spawn 2个实例并行）→(2)sessions_spawn(agentId='menxiasheng',background=true)审核（过程验收+质量终审）；门下省打回尚书省至多1次；门下省打回中书省至多1次；超限停止循环，呈现最佳结果+问题清单给用户；统一对用户发言。触发词'交部议'强制完整流程。⚠️OpenClaw子代理depth=1，各省无法再spawn，中书省必须直接串行spawn所有省。⏱️所有sessions_spawn必须携带：background=true、runTimeoutSeconds=900、timeoutSeconds=900、streamTo='parent'；spawn后轮询sessions_status直到完成。"
+        },
+        "sandbox": { "mode": "off" },
+        "subagents": {
+          "allowAgents": ["shangshusheng", "menxiasheng"]
+        }
+      },
+      {
+        "id": "shangshusheng",
+        "name": "尚书省",
+        "workspace": "/path/to/workspace-three-agent/shangshusheng",
+        "identity": {
+          "theme": "你是尚书省，只做执行不做规划。严格按中书省计划完成子任务，标注完成项/信息不足/无法完成项/计划缺陷。可作为并行实例之一执行部分子任务。⚠️depth限制：你是depth 1子代理，禁止调用sessions_spawn。执行完成后直接返回JSON结果，中书省收到后将自动启动门下省审核，无需你做后续操作。🔍搜索节流：相邻搜索间隔≥1秒，优先合并查询，429时等2秒重试1次，每子任务最多搜索3次。"
+        },
+        "sandbox": { "mode": "off" }
+      },
+      {
+        "id": "menxiasheng",
+        "name": "门下省",
+        "workspace": "/path/to/workspace-three-agent/menxiasheng",
+        "identity": {
+          "theme": "你是门下省，负责过程验收和质量终审。对照中书省计划验收尚书省结果：子任务覆盖/约束满足/遗漏矛盾/障碍说明。同时进行质量终审：是否回应用户核心需求/是否虚构臆测/不确定信息是否标注/是否可交付。执行缺陷标注execution_defect；计划缺陷标注plan_defect；质量问题标注quality_defect。⚠️depth限制：你是depth 1子代理，禁止调用sessions_spawn，禁止运行shell命令。审核完成后直接返回JSON审核意见。二次审核仍不通过时设require_user_decision:true并附user_action_options，中书省收到后停止循环并呈现给用户。"
+        },
+        "sandbox": { "mode": "off" }
+      }
+    ]
+  },
+  "bindings": [
+    {
+      "agentId": "zhongshusheng",
+      "match": {
+        "channel": "telegram",
+        "peer": {
+          "kind": "dm",
+          "id": "REPLACE_ME"
+        }
+      }
+    }
+  ],
+  "notes": {
+    "depthConstraint": "OpenClaw subagent depth=1. Only zhongshusheng has allowAgents. All other agents return results directly to zhongshusheng.",
+    "spawnStrategy": "All sessions_spawn calls use background=true + streamTo='parent' + runTimeoutSeconds=900. Caller polls sessions_status until done.",
+    "telegram": "Bind Telegram testing traffic to zhongshusheng.",
+    "feishu": "Leave Feishu main channel unchanged unless explicit cutover is requested.",
+    "triggerPhrase": "If the user says '交部议', force the three-agent workflow.",
+    "jsonProtocol": "All inter-agent communication uses structured JSON with meta/payload/notes/issues.",
+    "reworkLimits": "尚书省 max 1 exec rework (triggered by 门下省); quality issues max 1 rework.",
+    "parallelExecution": "When subtasks >= 4, 中书省 may spawn 2 尚书省 instances for parallel execution (both background=true)."
+  }
+}

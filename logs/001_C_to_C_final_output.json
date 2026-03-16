@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "task_id": "TASK-20260316-69841B",
+    "message_id": "MSG-5FA33F94",
+    "version": 1,
+    "from_agent": "C",
+    "to_agent": "C",
+    "timestamp": "2026-03-16T07:53:07.301940+00:00",
+    "task_type": "simple",
+    "stage": "final_output",
+    "status": "finalized"
+  },
+  "payload": {
+    "task_summary": "简单问题测试",
+    "output_mode": "normal_pass",
+    "final_answer": "[中书省直接回复] 针对用户请求「简单问题测试」的回答：\n\n（此处为中书省生成的直接回复内容。在实际运行中，此内容由 LLM 根据用户请求生成。）",
+    "audit_summary": "简单任务，中书省内部自审通过。"
+  },
+  "notes": [],
+  "issues": [],
+  "attachments": []
+}

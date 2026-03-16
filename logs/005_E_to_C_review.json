@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "task_id": "TASK-20260316-6C753E",
+    "message_id": "MSG-2CFB8143",
+    "version": 1,
+    "from_agent": "E",
+    "to_agent": "C",
+    "timestamp": "2026-03-16T07:53:08.654570+00:00",
+    "task_type": "complex",
+    "stage": "review",
+    "status": "passed"
+  },
+  "payload": {
+    "review_id": "REV-TASK-20260316-6C753E",
+    "plan_id": "PLAN-TASK-20260316-6C753E",
+    "execution_result_id": "EXEC-TASK-20260316-6C753E-merged",
+    "review_decision": "passed",
+    "review_scope": [
+      "子任务覆盖",
+      "关键约束满足情况",
+      "遗漏与矛盾检查",
+      "不确定项说明",
+      "用户需求响应情况",
+      "真实性与依据充分性",
+      "不确定项标注情况",
+      "最终可交付性"
+    ],
+    "summary": "审核通过：执行结果覆盖全部子任务，内容真实可交付。",
+    "problem_source": "none",
+    "required_actions": [],
+    "result": {
+      "content": "{\n  \"ST-001\": \"[尚书省-0执行结果] 需求分析：（LLM 生成的执行结果占位）\",\n  \"ST-002\": \"[尚书省-0执行结果] 信息收集：（LLM 生成的执行结果占位）\",\n  \"ST-003\": \"[尚书省-1执行结果] 分析执行：（LLM 生成的执行结果占位）\",\n  \"ST-004\": \"[尚书省-1执行结果] 结果整合：（LLM 生成的执行结果占位）\"\n}"
+    }
+  },
+  "notes": [],
+  "issues": [],
+  "attachments": [
+    {
+      "type": "plan_reference",
+      "ref_id": "PLAN-TASK-20260316-6C753E"
+    },
+    {
+      "type": "execution_reference",
+      "ref_id": "EXEC-TASK-20260316-6C753E-merged"
+    }
+  ]
+}

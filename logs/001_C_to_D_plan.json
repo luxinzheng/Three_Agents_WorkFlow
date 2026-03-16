@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "task_id": "TASK-20260316-6C753E",
+    "message_id": "MSG-96DD64F6",
+    "version": 1,
+    "from_agent": "C",
+    "to_agent": "D",
+    "timestamp": "2026-03-16T07:53:08.647965+00:00",
+    "task_type": "complex",
+    "stage": "plan",
+    "status": "pending"
+  },
+  "payload": {
+    "plan_id": "PLAN-TASK-20260316-6C753E",
+    "user_request": "请调研油价影响，交部议",
+    "normalized_request": "请调研油价影响，",
+    "objective": "完成用户请求的结构化分析：请调研油价影响，",
+    "subtasks": [
+      {
+        "subtask_id": "ST-001",
+        "name": "需求分析",
+        "description": "分析用户核心需求：请调研油价影响，"
+      },
+      {
+        "subtask_id": "ST-002",
+        "name": "信息收集",
+        "description": "收集相关信息与数据"
+      },
+      {
+        "subtask_id": "ST-003",
+        "name": "分析执行",
+        "description": "根据收集的信息进行分析"
+      },
+      {
+        "subtask_id": "ST-004",
+        "name": "结果整合",
+        "description": "整合分析结果，形成结构化输出"
+      }
+    ],
+    "execution_order": [
+      "ST-001",
+      "ST-002",
+      "ST-003",
+      "ST-004"
+    ],
+    "constraints": [
+      "必须避免虚构",
+      "对不确定信息明确标注"
+    ],
+    "expected_output_schema": {
+      "type": "document",
+      "sections": [
+        "需求分析",
+        "信息收集",
+        "分析结论",
+        "局限与不确定性"
+      ]
+    },
+    "completion_criteria": [
+      "覆盖全部子任务",
+      "满足用户约束",
+      "不确定信息已标注",
+      "输出结构清晰"
+    ],
+    "risks": [
+      "信息不足可能导致分析不完整",
+      "部分结论可能需要进一步验证"
+    ],
+    "routing_decision": {
+      "is_complex": true,
+      "reason": [
+        "用户明确要求「交部议」"
+      ]
+    },
+    "user_constraints": [
+      "必须避免虚构",
+      "对不确定信息明确标注"
+    ]
+  },
+  "notes": [
+    "规划基于当前可用信息生成，执行阶段可能需要调整。"
+  ],
+  "issues": [],
+  "attachments": []
+}

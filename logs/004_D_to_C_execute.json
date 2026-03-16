@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "task_id": "TASK-20260316-6C753E",
+    "message_id": "MSG-35B80957",
+    "version": 1,
+    "from_agent": "D",
+    "to_agent": "C",
+    "timestamp": "2026-03-16T07:53:08.653572+00:00",
+    "task_type": "complex",
+    "stage": "execute",
+    "status": "pending"
+  },
+  "payload": {
+    "plan_id": "PLAN-TASK-20260316-6C753E",
+    "execution_result_id": "EXEC-TASK-20260316-6C753E-merged",
+    "completed_subtasks": [
+      "ST-001",
+      "ST-002",
+      "ST-003",
+      "ST-004"
+    ],
+    "result": {
+      "content": "{\n  \"ST-001\": \"[尚书省-0执行结果] 需求分析：（LLM 生成的执行结果占位）\",\n  \"ST-002\": \"[尚书省-0执行结果] 信息收集：（LLM 生成的执行结果占位）\",\n  \"ST-003\": \"[尚书省-1执行结果] 分析执行：（LLM 生成的执行结果占位）\",\n  \"ST-004\": \"[尚书省-1执行结果] 结果整合：（LLM 生成的执行结果占位）\"\n}"
+    },
+    "unresolved_items": [],
+    "parallel_execution": true,
+    "instance_count": 2
+  },
+  "notes": [
+    "由 2 个尚书省实例并行执行后合并。"
+  ],
+  "issues": [],
+  "attachments": []
+}

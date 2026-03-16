@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "task_id": "TASK-20260316-6C753E",
+    "message_id": "MSG-7E197F1F",
+    "version": 1,
+    "from_agent": "D",
+    "to_agent": "C",
+    "timestamp": "2026-03-16T07:53:08.651483+00:00",
+    "task_type": "complex",
+    "stage": "execute",
+    "status": "pending"
+  },
+  "payload": {
+    "plan_id": "PLAN-TASK-20260316-6C753E",
+    "execution_result_id": "EXEC-TASK-20260316-6C753E-0",
+    "instance_id": 0,
+    "completed_subtasks": [
+      "ST-001",
+      "ST-002"
+    ],
+    "result": {
+      "content": "{\n  \"ST-001\": \"[尚书省-0执行结果] 需求分析：（LLM 生成的执行结果占位）\",\n  \"ST-002\": \"[尚书省-0执行结果] 信息收集：（LLM 生成的执行结果占位）\"\n}"
+    },
+    "unresolved_items": []
+  },
+  "notes": [
+    "尚书省实例 0 已按计划完成分配的子任务。"
+  ],
+  "issues": [],
+  "attachments": [
+    {
+      "type": "plan_reference",
+      "ref_id": "PLAN-TASK-20260316-6C753E"
+    }
+  ]
+}
